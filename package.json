@@ -1,0 +1,12 @@
+{
+  "name": "production-task-manager-proxy",
+  "version": "1.0.0",
+  "description": "SAP ByD SOAP proxy for Production Task Manager PWA",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
