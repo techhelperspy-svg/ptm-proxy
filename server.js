@@ -12,11 +12,6 @@ const SOAP_ENVELOPE = `<?xml version="1.0" encoding="utf-8"?>
   <soapenv:Header/>
   <soapenv:Body>
     <glob:ProductionLotByElementsQuery_sync>
-      <SelectionByLifeCycleStatusCode>
-        <InclusionExclusionCode>I</InclusionExclusionCode>
-        <IntervalBoundaryTypeCode>1</IntervalBoundaryTypeCode>
-        <LowerBoundaryLifeCycleStatusCode>1</LowerBoundaryLifeCycleStatusCode>
-      </SelectionByLifeCycleStatusCode>
       <ProcessingConditions>
         <QueryHitsMaximumNumberValue>100</QueryHitsMaximumNumberValue>
         <QueryHitsUnlimitedIndicator>false</QueryHitsUnlimitedIndicator>
