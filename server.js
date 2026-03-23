@@ -10,41 +10,56 @@ const BYD_AUTH = 'Basic ' + Buffer.from('_DEV:Welcome123').toString('base64');
 function buildEnvelope(count, dateFrom, dateTo) {
   const maxHits = count || 100;
 
+  // Date filter using SelectionByProductionLotCreationDateTime (per WSDL)
   let dateFilter = '';
-  if (dateFrom || dateTo) {
-    const from = dateFrom ? `${dateFrom}T00:00:00Z` : '';
-    const to   = dateTo   ? `${dateTo}T23:59:59Z`   : '';
-
-    if (from && to) {
-      dateFilter = `
-      <SelectionByProductionStartDate>
-        <InclusionExclusionCode>I</InclusionExclusionCode>
-        <IntervalBoundaryTypeCode>3</IntervalBoundaryTypeCode>
-        <LowerBoundaryDateTime>${from}</LowerBoundaryDateTime>
-        <UpperBoundaryDateTime>${to}</UpperBoundaryDateTime>
-      </SelectionByProductionStartDate>`;
-    } else if (from) {
-      dateFilter = `
-      <SelectionByProductionStartDate>
-        <InclusionExclusionCode>I</InclusionExclusionCode>
-        <IntervalBoundaryTypeCode>1</IntervalBoundaryTypeCode>
-        <LowerBoundaryDateTime>${from}</LowerBoundaryDateTime>
-      </SelectionByProductionStartDate>`;
-    } else if (to) {
-      dateFilter = `
-      <SelectionByProductionStartDate>
-        <InclusionExclusionCode>I</InclusionExclusionCode>
-        <IntervalBoundaryTypeCode>2</IntervalBoundaryTypeCode>
-        <UpperBoundaryDateTime>${to}</UpperBoundaryDateTime>
-      </SelectionByProductionStartDate>`;
-    }
+  if (dateFrom && dateTo) {
+    dateFilter = `
+        <SelectionByProductionLotCreationDateTime>
+          <InclusionExclusionCode>I</InclusionExclusionCode>
+          <IntervalBoundaryTypeCode>3</IntervalBoundaryTypeCode>
+          <LowerBoundaryDate>${dateFrom}T00:00:00Z</LowerBoundaryDate>
+          <UpperBoundaryDate>${dateTo}T23:59:59Z</UpperBoundaryDate>
+        </SelectionByProductionLotCreationDateTime>`;
+  } else if (dateFrom) {
+    dateFilter = `
+        <SelectionByProductionLotCreationDateTime>
+          <InclusionExclusionCode>I</InclusionExclusionCode>
+          <IntervalBoundaryTypeCode>1</IntervalBoundaryTypeCode>
+          <LowerBoundaryDate>${dateFrom}T00:00:00Z</LowerBoundaryDate>
+        </SelectionByProductionLotCreationDateTime>`;
+  } else if (dateTo) {
+    dateFilter = `
+        <SelectionByProductionLotCreationDateTime>
+          <InclusionExclusionCode>I</InclusionExclusionCode>
+          <IntervalBoundaryTypeCode>2</IntervalBoundaryTypeCode>
+          <UpperBoundaryDate>${dateTo}T23:59:59Z</UpperBoundaryDate>
+        </SelectionByProductionLotCreationDateTime>`;
   }
+
+  // Per WSDL: SelectionByProductionLotStatusCode uses LogisticsLifeCycleStatusCode
+  // SAP ByD Production Lot status codes:
+  //   1 = In Preparation  ✅ include
+  //   2 = Released        ✅ include
+  //   3 = In Process      ✅ include
+  //   4 = Completed       ❌ exclude
+  //   5 = Cancelled       ❌ exclude
+  //   6 = Closed          ❌ exclude
+  // Strategy: INCLUDE codes 1 through 3 using IntervalBoundaryTypeCode=3 (between)
+  const statusFilter = `
+        <SelectionByProductionLotStatusCode>
+          <InclusionExclusionCode>I</InclusionExclusionCode>
+          <IntervalBoundaryTypeCode>3</IntervalBoundaryTypeCode>
+          <LowerBoundaryLifeCycleStatusCode>1</LowerBoundaryLifeCycleStatusCode>
+          <UpperBoundaryLifeCycleStatusCode>3</UpperBoundaryLifeCycleStatusCode>
+        </SelectionByProductionLotStatusCode>`;
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:glob="http://sap.com/xi/SAPGlobal20/Global">
   <soapenv:Header/>
   <soapenv:Body>
-    <glob:ProductionLotByElementsQuery_sync>${dateFilter}
+    <glob:ProductionLotByElementsQuery_sync>
+      <ProductionLotSelectionByElements>${statusFilter}${dateFilter}
+      </ProductionLotSelectionByElements>
       <ProcessingConditions>
         <QueryHitsMaximumNumberValue>${maxHits}</QueryHitsMaximumNumberValue>
         <QueryHitsUnlimitedIndicator>false</QueryHitsUnlimitedIndicator>
